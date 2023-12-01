@@ -16,7 +16,7 @@ tf.config.set_visible_devices([],'GPU')
 
 model=tf.keras.models.load_model("ionosonde_gan")
 
-hd=h5py.File("/media/j/fee7388b-a51d-4e10-86e3-5cabb0e1bc13/Kian/training_data.h5","r")
+hd=h5py.File("training_data.h5","r")
 pars=hd["chapman_pars"][()]
 images=hd["images"][()]
 hd.close()
