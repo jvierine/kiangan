@@ -9,12 +9,13 @@ from tensorflow.keras.initializers import GlorotNormal
 from tensorflow.keras import layers, models, optimizers
 from tensorflow import keras
 import tensorflow as tf
+from tensorflow.keras import backend as K
 
 import sklearn
 from sklearn.model_selection import train_test_split
 
 
-tf.config.set_visible_devices([],'GPU')
+#tf.config.set_visible_devices([],'GPU')
 def par2neprof(params, h=n.array([90,93,95,100,110,120,120,130,180,200,250,300,350,400,450,500])):
     """
     sum of two chapman function. convert chapman pars to electron density profile
@@ -104,6 +105,14 @@ if __name__ == "__main__":
     val_images=tf.convert_to_tensor(val_images)
     val_data=tf.convert_to_tensor(val_data)    
 
+    def custom_mse():
+        def weighted_mse(pred):
+ #           print(gt.shape)
+#            print(pred.shape)
+            return(1*K.sum(K.square(pred[1:]-pred[:-1])))
+        return(weighted_mse)
+    
+    cmse=custom_mse()
 
     input_shape=(81, 81, 1)
     
@@ -126,10 +135,13 @@ if __name__ == "__main__":
     model.add(layers.Flatten())
     
     # Dense layers (encoder)
-    model.add(layers.Dense(128, activation='relu'))
+    # TBD: try deconvolution network?
     model.add(layers.Dense(64, activation='relu'))
+    model.add(layers.Dense(64, activation='relu'))    
+    model.add(layers.Dense(16, activation='linear',activity_regularizer=cmse))    
+#    model.add(layers.Dense(64, activation='relu'))
     
-    model.add(layers.Dense(16, activation='linear'))
+#    model.add(layers.Dense(16, activation='linear'))
 
     model.compile(optimizer="adam", loss="mse")  # Use appropriate loss function for regression
     
@@ -139,14 +151,16 @@ if __name__ == "__main__":
                                                           save_best_only=True)
     model_fit =  model.fit(training_images,
                            training_data,
-                           epochs=100,
+                           epochs=10000,
                            batch_size=32,
                            validation_data=(val_images, val_data),
                            callbacks=[model_checkpoint])
 
     Cost =  model_fit.history["loss"]
+    val_loss =  model_fit.history["val_loss"]    
 
     plt.plot(Cost)
+    plt.plot(val_loss)    
     plt.show()
     
     
